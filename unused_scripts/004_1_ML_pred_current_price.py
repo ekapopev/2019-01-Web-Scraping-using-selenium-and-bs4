@@ -91,8 +91,11 @@ def rmse_cv(model,n_folds=5):
 ###############################################################################
 ols = make_pipeline(RobustScaler(), LinearRegression())
 rmse,r_sq_score = rmse_cv(ols)
+# get coefficient
 ols.steps[1][1]
+ols.steps[1][1].coef_
 plt.plot(ols.steps[1][1].coef_)
+ols_coef = pd.DataFrame(ols.steps[1][1].coef_,index = list(X_test),columns=['coef'])
 ###############################################################################
 # ridge regression
 # manually tune alpha(s)
@@ -103,7 +106,6 @@ for alpha_val in alpha_list:
     rmse,r_sq_score = rmse_cv(ridge)
     result.append([ridge,alpha_val,np.mean(rmse),r_sq_score])
 ridge_result = pd.DataFrame(result, columns = ['ridge_model','alpha_val','np.mean(rmse)','r_sq_score'])
-
 #plot to compare effect of alpha
 plt.plot(ols.steps[1][1].coef_, alpha = .8)
 plt.plot(ridge_result['ridge_model'][3].steps[1][1].coef_, alpha = 0.6)
@@ -113,6 +115,10 @@ plt.xlabel('independent variable #')
 plt.ylabel('magnitudes of the coefficients')
 plt.legend(['linear reg', 'ridge, alpha = 0.1', 'ridge, alpha = 10', 'ridge, alpha = 1000'], loc='upper left')
 plt.show()
+# get coefficient
+ridge = make_pipeline(RobustScaler(), Ridge(alpha= 0.0001, random_state = 121))
+rmse,r_sq_score = rmse_cv(ridge)
+ridge_coef = pd.DataFrame(ridge.steps[1][1].coef_,index = list(X_test),columns=['coef'])
 ###############################################################################
 from sklearn.model_selection import GridSearchCV
 # Create the parameter grid based on the results of random search 
@@ -151,6 +157,18 @@ best_grid = grid_search.best_estimator_
 rf_best = make_pipeline(RobustScaler(), best_grid)
 rmse,r_sq_score = rmse_cv(rf)
 print('RMSE: {:.2f}'.format(rmse.mean()),'r2_score: '+ str(r_sq_score))
+
+# get coefficient
+rf_best = make_pipeline(RobustScaler(), 
+                        RandomForestRegressor(
+                        bootstrap= True,
+                        max_depth= 80,
+                        max_features= 40,
+                        min_samples_leaf= 3,
+                        min_samples_split= 8,
+                        n_estimators= 200))
+rmse,r_sq_score = rmse_cv(rf_best)
+ridge_coef = pd.DataFrame(rf_best.steps[1][1].coef_,index = list(X_test),columns=['coef'])
 ###############################################################################
 param_grid = {
     'learning_rate': [0.05],
